@@ -9,6 +9,7 @@ public class Player : MonoBehaviour
     [SerializeField] private GameInput gameInput;
     [SerializeField] private LayerMask countersLayerMask;
 
+    [SerializeField] private GameObject bomb;
 
     [SerializeField] Transform spawnPoint;
     
@@ -21,16 +22,19 @@ public class Player : MonoBehaviour
     private void Start()
     {
         //bu event her e'ye basýldýgýnda ateþlenir
-        //gameInput.OnInteractAction += GameInput_OnInteractAction;
+        gameInput.OnInteractAction += GameInput_OnInteractAction;
         //gameInput.OnInteractAlternateAction += GameInput_OnInteractAlternateAction;
     }
 
-
-
+    private void GameInput_OnInteractAction(object sender, EventArgs e)
+    {
+        DropBomb();
+    }
 
     private void Update()
     {
-        HandleMovement();      
+        HandleMovement();
+        HandleBombCollison();           
     }
 
     
@@ -53,7 +57,7 @@ public class Player : MonoBehaviour
         float playerRadius = 0.7f;
         float moveDistance = Time.deltaTime * moveSpeed;
 
-        bool canMove = !Physics.CapsuleCast(transform.position, transform.position + Vector3.up * playerHeight, playerRadius, moveVector, moveDistance);
+        bool canMove = !Physics.CapsuleCast(transform.position + Vector3.up, transform.position + Vector3.up * playerHeight, playerRadius, moveVector, moveDistance);
 
 
         //hareket
@@ -70,7 +74,7 @@ public class Player : MonoBehaviour
             Vector3 xCheck = moveVector;
             xCheck.z = 0f;
             //xte hareket mümkünse et
-            if (!Physics.CapsuleCast(transform.position, transform.position + Vector3.up * playerHeight, playerRadius, xCheck, moveDistance))
+            if (!Physics.CapsuleCast(transform.position + Vector3.up , transform.position + Vector3.up * playerHeight, playerRadius, xCheck, moveDistance))
             {
                 transform.position = transform.position + xCheck * Time.deltaTime * moveSpeed;
             }
@@ -78,12 +82,14 @@ public class Player : MonoBehaviour
             Vector3 zCheck = moveVector;
             zCheck.x = 0;
             //zde hareket mümkünse et
-            if (!Physics.CapsuleCast(transform.position, transform.position + Vector3.up * playerHeight, playerRadius, zCheck, moveDistance))
+            if (!Physics.CapsuleCast(transform.position + Vector3.up , transform.position + Vector3.up * playerHeight, playerRadius, zCheck, moveDistance))
             {
                 transform.position = transform.position + zCheck * Time.deltaTime * moveSpeed;
             }
-
+            
         }
+
+
     }
 
     Vector3 lastMoveVector;
@@ -91,6 +97,8 @@ public class Player : MonoBehaviour
     private void HandleInteractions()
     {
         //moveVector ayarlama
+
+        /*
         Vector2 inputVector = new Vector2();
         inputVector = gameInput.GetMovementVectorNormalized();
 
@@ -107,6 +115,7 @@ public class Player : MonoBehaviour
 
         RaycastHit raycastHit;
         float maxDistance = 2f;
+        */      
     }
 
 
@@ -137,5 +146,26 @@ public class Player : MonoBehaviour
         return spawnPoint;
     }
 
-  
+    private BombPlane curentBombPlane;
+
+    RaycastHit hit;
+    private void HandleBombCollison()
+    {                            
+        Vector3 start = transform.position;
+
+        Vector3 end = Vector3.up * -10f; 
+        Physics.Raycast(start, end, out hit);
+        Debug.Log(hit.collider.gameObject.name);
+        curentBombPlane = hit.collider.GetComponent<BombPlane>();
+
+    }
+
+    private void DropBomb()
+    {
+        Vector3 dropPosition = hit.transform.position;
+        Instantiate(bomb, dropPosition, Quaternion.identity);
+    }
+    
+
+
 }
