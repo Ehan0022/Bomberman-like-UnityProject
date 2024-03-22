@@ -7,7 +7,8 @@ public class Player : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 7f;
     [SerializeField] private GameInput gameInput;
-    [SerializeField] private LayerMask countersLayerMask;
+    [SerializeField] private LayerMask bombPlaneLayerMask;
+    
 
     [SerializeField] private GameObject bomb;
 
@@ -42,11 +43,13 @@ public class Player : MonoBehaviour
     {
         //moveVector ayarlama
         Vector2 inputVector = new Vector2();
-        inputVector = gameInput.GetMovementVectorNormalized();
+        inputVector = gameInput.GetMovementVector();
 
         Vector3 moveVector = new Vector3(0, 0, 0);
+       
         moveVector.x = inputVector.x;
-        moveVector.z = inputVector.y;
+        if(inputVector.x == 0f)
+            moveVector.z = inputVector.y;
 
         //rotasyon
         float rotateSpeed = 12f;
@@ -122,7 +125,7 @@ public class Player : MonoBehaviour
     public bool IsMoving()
     {
         Vector2 inputVector = new Vector2();
-        inputVector = gameInput.GetMovementVectorNormalized();
+        inputVector = gameInput.GetMovementVector();
 
         Vector3 moveVector = new Vector3(0, 0, 0);
         moveVector.x = inputVector.x;
@@ -154,16 +157,24 @@ public class Player : MonoBehaviour
         Vector3 start = transform.position;
 
         Vector3 end = Vector3.up * -10f; 
-        Physics.Raycast(start, end, out hit);
-        Debug.Log(hit.collider.gameObject.name);
+        Physics.Raycast(start, end, out hit, bombPlaneLayerMask);        
         curentBombPlane = hit.collider.GetComponent<BombPlane>();
 
     }
 
+    Bomb bombX;
     private void DropBomb()
     {
-        Vector3 dropPosition = hit.transform.position;
-        Instantiate(bomb, dropPosition, Quaternion.identity);
+        if(!curentBombPlane.BombIsPresent())
+        {
+            Vector3 dropPosition = hit.transform.position;
+            bombX = Instantiate(bomb, dropPosition, Quaternion.identity).GetComponent<Bomb>();
+            if (bombX != null)
+            {
+                curentBombPlane.SetBombOnTop(bombX);
+                bombX.SetCurrentBombPlane(curentBombPlane);
+            }                          
+        }                  
     }
     
 

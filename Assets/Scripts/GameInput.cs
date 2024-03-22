@@ -27,12 +27,12 @@ public class GameInput : MonoBehaviour
     }
 
     
-    public Vector2 GetMovementVectorNormalized()
+    public Vector2 GetMovementVector()
     {
         Vector2 inputVector = inputActions.Player.Move.ReadValue<Vector2>();
 
-        //bu method vektörü 1 büyüklüðüne getirir.
-        inputVector = inputVector.normalized;
+        
+        
         return inputVector;
 
     }

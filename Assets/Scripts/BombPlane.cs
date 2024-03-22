@@ -3,14 +3,25 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class BombPlane : MonoBehaviour
-{
-    [SerializeField] GameObject bombDropPoint;
+{   
     [SerializeField] private bool bombPresent = false;
+    private Bomb bombOnTop;
 
-    public Transform GetBombDropPointTransform()
+    public void SetBombOnTop(Bomb bomb)
     {
-        return bombDropPoint.transform;
+        bombOnTop = bomb;
+        bombPresent = true;
     }
 
+    public void ClearBomb()
+    {
+        bombOnTop = null;
+        bombPresent = false;
+    }
+
+    public bool BombIsPresent()
+    {
+        return bombPresent;
+    }
     
 }
