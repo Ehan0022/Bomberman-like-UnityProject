@@ -228,6 +228,11 @@ MonoBehaviour:
   boxLayerMask:
     serializedVersion: 2
     m_Bits: 128
+  perks:
+  - {fileID: 3988177604553442276, guid: d657afe66c8b79347b5cd577a56f5da4, type: 3}
+  - {fileID: 6765686662611596302, guid: fdd20fbfefe6f104e93c231540aba389, type: 3}
+  explosion: {fileID: 646294627545554988, guid: 46ef19c39bee54a4289760313d8e8362, type: 3}
+  player: {fileID: 0}
 --- !u!1 &5637517735889905174
 GameObject:
   m_ObjectHideFlags: 0

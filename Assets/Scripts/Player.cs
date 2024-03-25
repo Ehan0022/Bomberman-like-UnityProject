@@ -8,7 +8,9 @@ public class Player : MonoBehaviour
     [SerializeField] private float moveSpeed = 7f;
     [SerializeField] private GameInput gameInput;
     [SerializeField] private LayerMask bombPlaneLayerMask;
-    
+    [SerializeField] private LayerMask perkLayerMask;
+
+    [SerializeField] private int health = 3;
 
     [SerializeField] private GameObject bomb;
 
@@ -16,6 +18,9 @@ public class Player : MonoBehaviour
     
 
     private bool isMoving;
+
+    private int activeBombCount = 0;
+    private int bombLimit = 1;
 
 
 
@@ -35,7 +40,8 @@ public class Player : MonoBehaviour
     private void Update()
     {
         HandleMovement();
-        HandleBombCollison();           
+        HandleBombCollison();
+        HandlePerkInteractions();
     }
 
     
@@ -95,30 +101,23 @@ public class Player : MonoBehaviour
 
     }
 
-    Vector3 lastMoveVector;
-    
-    private void HandleInteractions()
+    private float perkRange = 1f;
+    private void HandlePerkInteractions()
     {
-        //moveVector ayarlama
-
-        /*
-        Vector2 inputVector = new Vector2();
-        inputVector = gameInput.GetMovementVectorNormalized();
-
-        Vector3 moveVector = new Vector3(0, 0, 0);
-        moveVector.x = inputVector.x;
-        moveVector.z = inputVector.y;
-
-
-        //son baktýgýmýz yeri kaydetme
-        if(moveVector!=Vector3.zero)
+        RaycastHit perk;
+        Physics.Raycast(transform.position, transform.forward, out perk, perkRange, perkLayerMask);
+        if(perk.collider != null)
         {
-            lastMoveVector = moveVector;
-        }
+            if (perk.collider.gameObject.tag.Equals("ExtraBomb"))
+            {
+                ExtraBombPerkCollected(perk);
+            }
 
-        RaycastHit raycastHit;
-        float maxDistance = 2f;
-        */      
+            if (perk.collider.gameObject.tag.Equals("BombRange"))
+            {
+                ExtraRangePerkCollected(perk);
+            }
+        }       
     }
 
 
@@ -167,15 +166,49 @@ public class Player : MonoBehaviour
     {
         if(!curentBombPlane.BombIsPresent())
         {
-            Vector3 dropPosition = hit.transform.position;
-            bombX = Instantiate(bomb, dropPosition, Quaternion.identity).GetComponent<Bomb>();
-            if (bombX != null)
+            if(activeBombCount < bombLimit)
             {
-                curentBombPlane.SetBombOnTop(bombX);
-                bombX.SetCurrentBombPlane(curentBombPlane);
-            }                          
+                Vector3 dropPosition = hit.transform.position;
+                bombX = Instantiate(bomb, dropPosition, Quaternion.identity).GetComponent<Bomb>();
+                if (bombX != null)
+                {
+                    bombX.player = this;
+                    curentBombPlane.SetBombOnTop(bombX);
+                    bombX.SetCurrentBombPlane(curentBombPlane);
+                    activeBombCount++;
+                }
+            }
+                                     
         }                  
     }
+
+    public void DecreaseActiveBombCount()
+    {
+        activeBombCount--;
+    }
+
+    private void ExtraBombPerkCollected(RaycastHit perk)
+    {
+        bombLimit++;
+        Destroy(perk.collider.gameObject);
+    }
+
+    private void ExtraRangePerkCollected(RaycastHit perk)
+    {
+        Bomb.range++;
+        Destroy(perk.collider.gameObject);
+    }
+
+    public void IncreaseHealth()
+    {
+        health++;
+    }
+
+    public void DecreaseHealth()
+    {
+        health--;
+    }
+    
     
 
 
