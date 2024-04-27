@@ -8,6 +8,7 @@ TagManager:
   - ExtraBomb
   - BombRange
   - Box
+  - ExtraHealth
   layers:
   - Default
   - TransparentFX

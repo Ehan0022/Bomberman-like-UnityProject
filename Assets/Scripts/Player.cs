@@ -9,6 +9,8 @@ public class Player : MonoBehaviour
     [SerializeField] private GameInput gameInput;
     [SerializeField] private LayerMask bombPlaneLayerMask;
     [SerializeField] private LayerMask perkLayerMask;
+    [SerializeField] private LayerMask boxOrWallLayerMask;
+    [SerializeField] private LayerMask bombsLayerMask;
 
     [SerializeField] private int health = 3;
 
@@ -22,14 +24,30 @@ public class Player : MonoBehaviour
     private int activeBombCount = 0;
     private int bombLimit = 1;
 
+    public enum Direction
+    {
+        Right,
+        Left,
+        Forward,
+        Backward,
+    }
+
+    public Direction currentDirection;
 
 
-
+    Vector3 lastMoveDir;
     private void Start()
     {
         //bu event her e'ye basýldýgýnda ateþlenir
+        lastMoveDir = new Vector3(0, 0, 0);
         gameInput.OnInteractAction += GameInput_OnInteractAction;
-        //gameInput.OnInteractAlternateAction += GameInput_OnInteractAlternateAction;
+        gameInput.OnInteractAlternateAction += GameInput_OnInteractAlternateAction;
+    }
+
+    //bomb push
+    private void GameInput_OnInteractAlternateAction(object sender, EventArgs e)
+    {
+        PushBomb();
     }
 
     private void GameInput_OnInteractAction(object sender, EventArgs e)
@@ -37,14 +55,16 @@ public class Player : MonoBehaviour
         DropBomb();
     }
 
+
+   
     private void Update()
     {
-        HandleMovement();
-        HandleBombCollison();
+        HandleMovement();        
         HandlePerkInteractions();
+
     }
 
-    
+
     private void HandleMovement()
     {
         //moveVector ayarlama
@@ -57,18 +77,13 @@ public class Player : MonoBehaviour
         if(inputVector.x == 0f)
             moveVector.z = inputVector.y;
 
-        //rotasyon
-        float rotateSpeed = 12f;
-        transform.forward = Vector3.Slerp(transform.forward, moveVector, Time.deltaTime * rotateSpeed);
-
         //raycastle önde obje olma kontrolü
         float playerHeight = 2f;
         float playerRadius = 0.7f;
         float moveDistance = Time.deltaTime * moveSpeed;
 
         bool canMove = !Physics.CapsuleCast(transform.position + Vector3.up, transform.position + Vector3.up * playerHeight, playerRadius, moveVector, moveDistance);
-
-
+        
         //hareket
 
         //eðer güncel yönde hareket edebiliyosan hareket et
@@ -97,8 +112,41 @@ public class Player : MonoBehaviour
             }
             
         }
+     
+        if (IsMoving())
+        {
+            lastMoveDir = moveVector;
+        }
 
+        //rotasyon
+        /*
+        float rotateSpeed = 150f;
+        transform.forward = Vector3.Slerp(transform.forward, lastMoveDir, Time.deltaTime * rotateSpeed);
+        */
+        transform.forward =  lastMoveDir;
 
+        Quaternion targetRotation = Quaternion.Euler(0f, 90f, 0f); // Hedef dönüþ 90 derece olarak ayarlandý
+        if (Quaternion.Angle(transform.rotation, targetRotation) < 0.01f)
+        {
+            currentDirection = Direction.Right;
+        }
+        targetRotation = Quaternion.Euler(0f, -90f, 0f); // Hedef dönüþ 90 derece olarak ayarlandý
+        if (Quaternion.Angle(transform.rotation, targetRotation) < 0.01f)
+        {
+            currentDirection = Direction.Left;
+        }
+        targetRotation = Quaternion.Euler(0f, 0f, 0f); // Hedef dönüþ 90 derece olarak ayarlandý
+        if (Quaternion.Angle(transform.rotation, targetRotation) < 0.01f)
+        {
+            currentDirection = Direction.Forward;
+        }
+        targetRotation = Quaternion.Euler(0f, 180f, 0f); // Hedef dönüþ 90 derece olarak ayarlandý
+        if (Quaternion.Angle(transform.rotation, targetRotation) < 0.01f)
+        {
+            currentDirection = Direction.Backward;
+        }
+
+        //Debug.Log(currentDirection);
     }
 
     private float perkRange = 1f;
@@ -116,6 +164,11 @@ public class Player : MonoBehaviour
             if (perk.collider.gameObject.tag.Equals("BombRange"))
             {
                 ExtraRangePerkCollected(perk);
+            }
+
+            if(perk.collider.gameObject.tag.Equals("ExtraHealth"))
+            {
+                ExtraHealthPerkCollected(perk);
             }
         }       
     }
@@ -150,21 +203,18 @@ public class Player : MonoBehaviour
 
     private BombPlane curentBombPlane;
 
+
     RaycastHit hit;
-    private void HandleBombCollison()
-    {                            
-        Vector3 start = transform.position;
-
-        Vector3 end = Vector3.up * -10f; 
-        Physics.Raycast(start, end, out hit, bombPlaneLayerMask);        
-        curentBombPlane = hit.collider.GetComponent<BombPlane>();
-
-    }
-
     Bomb bombX;
     private void DropBomb()
     {
-        if(!curentBombPlane.BombIsPresent())
+        Vector3 start = transform.position;
+        Vector3 end = Vector3.up * -3f;
+        Physics.Raycast(start, end, out hit, bombPlaneLayerMask);
+        curentBombPlane = hit.collider.GetComponent<BombPlane>();
+
+
+        if (!curentBombPlane.BombIsPresent())
         {
             if(activeBombCount < bombLimit)
             {
@@ -182,6 +232,88 @@ public class Player : MonoBehaviour
         }                  
     }
 
+
+    [SerializeField] GameObject debugBomb;
+    RaycastHit collidedObject;
+    RaycastHit bombInFront;
+
+    private void PushBomb()
+    {
+        Vector3 start = transform.position;
+        Vector3 end = lastMoveDir.normalized;
+        Physics.Raycast(start, end, out collidedObject, 39f, boxOrWallLayerMask);
+
+        Vector3 start2 = transform.position;
+        Vector3 end2 = lastMoveDir.normalized;
+        Physics.Raycast(start2, end2, out bombInFront, 2f, bombsLayerMask);      
+        Bomb bombInFrontS = bombInFront.collider.gameObject.GetComponent<Bomb>();
+        
+       // Debug.Log(bombInFront.collider.gameObject);
+        
+        if (collidedObject.collider != null)
+        {
+            //Debug.Log("Spawn denendi");
+            GameObject boxOrWall = collidedObject.collider.gameObject;
+            Vector3 start1 = boxOrWall.transform.position;
+            Vector3 end1 = Vector3.up * -3f;
+            RaycastHit hit;
+            Physics.Raycast(start1, end1, out hit, bombPlaneLayerMask);
+            if (hit.collider != null)
+            {
+                if(currentDirection == Direction.Left)
+                {
+                    Vector3 newBombPosition = hit.collider.gameObject.transform.position + new Vector3(3f, 0, 0);
+                    //Instantiate(debugBomb, newBombPosition, Quaternion.identity);
+
+                    if(bombInFrontS != null)
+                    {
+                        bombInFrontS.SetShouldMove(true);
+                        bombInFrontS.SetNewPosition(newBombPosition);
+                    }
+                        
+                }
+                if (currentDirection == Direction.Right)
+                {
+                    Vector3 newBombPosition = hit.collider.gameObject.transform.position + new Vector3(-3f, 0, 0);
+                    //Instantiate(debugBomb, newBombPosition, Quaternion.identity);
+
+                    if (bombInFrontS != null)
+                    {
+                        bombInFrontS.SetShouldMove(true);
+                        bombInFrontS.SetNewPosition(newBombPosition);
+                    }
+                }
+                if (currentDirection == Direction.Backward)
+                {
+                    Vector3 newBombPosition = hit.collider.gameObject.transform.position + new Vector3(0, 0, 3f);
+                    //Instantiate(debugBomb, newBombPosition, Quaternion.identity);
+
+                    if (bombInFrontS != null)
+                    {
+                        bombInFrontS.SetShouldMove(true);
+                        bombInFrontS.SetNewPosition(newBombPosition);
+                    }
+                }
+                if (currentDirection == Direction.Forward)
+                {
+                    Vector3 newBombPosition = hit.collider.gameObject.transform.position + new Vector3(0, 0, -3f);
+                    //Instantiate(debugBomb, newBombPosition, Quaternion.identity);
+
+                    if (bombInFrontS != null)
+                    {
+                        bombInFrontS.SetShouldMove(true);
+                        bombInFrontS.SetNewPosition(newBombPosition);
+                    }
+                }
+            }
+           
+        }
+
+    }
+
+
+
+
     public void DecreaseActiveBombCount()
     {
         activeBombCount--;
@@ -198,6 +330,13 @@ public class Player : MonoBehaviour
         Bomb.range++;
         Destroy(perk.collider.gameObject);
     }
+
+    private void ExtraHealthPerkCollected(RaycastHit perk)
+    {
+        IncreaseHealth();
+        Destroy(perk.collider.gameObject);
+    }
+
 
     public void IncreaseHealth()
     {

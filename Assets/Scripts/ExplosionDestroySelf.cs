@@ -38,30 +38,33 @@ public class ExplosionDestroySelf : MonoBehaviour
         //Debug.DrawRay(transform.position, -transform.forward * explosionRange, Color.green);
         //Debug.DrawRay(transform.position, transform.right * explosionRange, Color.green);
         //Debug.DrawRay(transform.position, -transform.right * explosionRange, Color.green);
-
-        DamagePlayer(forwardHit);
-        DamagePlayer(backwardHit);
-        DamagePlayer(rightHit);
-        DamagePlayer(leftHit);
-        DamagePlayer(upwardHit);
-
-
+       
+        
+         DamagePlayer(forwardHit);
+         DamagePlayer(backwardHit);
+         DamagePlayer(rightHit);
+         DamagePlayer(leftHit);
+         DamagePlayer(upwardHit);
+        
+           
     }
 
     private void DamagePlayer(RaycastHit hit)
     {
         if(hit.collider != null && hit.collider.gameObject.tag.Equals("Player") && !parentBomb.damagedPlayer)
         {
-            Debug.Log("PLAYER VURULDU");
+            //Debug.Log("PLAYER VURULDU");
             parentBomb.damagedPlayer = true;
             Player player = hit.collider.gameObject.GetComponent<Player>();
             player.DecreaseHealth();
         }
     }
 
+   
     public void SetParentBomb(Bomb bomb)
     {
         parentBomb = bomb;    
     }
+
 
 }

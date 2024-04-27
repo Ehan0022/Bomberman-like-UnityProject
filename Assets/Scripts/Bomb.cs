@@ -14,10 +14,15 @@ public class Bomb : MonoBehaviour
     [SerializeField] private LayerMask boxLayerMask;
     [SerializeField] private GameObject[] perks;
     [SerializeField] private GameObject explosion;
+    [SerializeField] private GameObject explosionAlternate;
     public Player player;
 
     public bool damagedPlayer = false;
-  
+    private bool isPerkBomb = false;
+
+    private bool shouldMove = false;
+    private Vector3 newPosition;
+
     public enum Direction
     {
         Forward,
@@ -37,25 +42,41 @@ public class Bomb : MonoBehaviour
         currentBombPlane.ClearBomb();
     }
 
+    public void SetIsPerkBomb(bool isPerk)
+    {
+        isPerkBomb = isPerk;
+    }
+
+    public void SetShouldMove(bool shouldMove_)
+    {
+        shouldMove = shouldMove_;
+    }
+
+    public void SetNewPosition(Vector3 newPos)
+    {
+        newPosition = newPos;
+    }
+
+
     private void Update()
     {
+        MoveBomb(shouldMove, newPosition);
         timer += Time.deltaTime;
-        if (timer > maxTimer)
+        if (timer > maxTimer )
         {
             HandleExplosionLogic(Direction.Forward);
             HandleExplosionLogic(Direction.Backward);
             HandleExplosionLogic(Direction.Right);
             HandleExplosionLogic(Direction.Left);
-
-            //SpawnExplosionEffects();
-            Destroy(gameObject);
             player.DecreaseActiveBombCount();
-            ClearBombPlane();           
-        }    
+            ClearBombPlane();
+            Destroy(gameObject);                            
+        }
+      
     }
 
+   
     
-
 
     private void HandleExplosionLogic(Direction direction)
     {
@@ -65,10 +86,10 @@ public class Bomb : MonoBehaviour
         if (direction == Direction.Forward)
         {
             for (int i = 0; i < range; i++)
-            {               
+            {
                 Physics.Raycast(transform.position, transform.forward, out raycastHit, bombsRange);
 
-                if(raycastHit.collider != null && raycastHit.collider.gameObject != null)
+                if (raycastHit.collider != null && raycastHit.collider.gameObject != null)
                 {
                     //bomba bu yönde bir yüzeyle çarpýþtý
                     if (raycastHit.collider.gameObject.tag.Equals("Box"))
@@ -76,8 +97,18 @@ public class Bomb : MonoBehaviour
                         //eðer kutuysa yok et.
                         InstantiatePerkAtRandom(raycastHit);
                         Destroy(raycastHit.collider.gameObject);
+
+                        Vector3 forward = transform.position + Vector3.forward * explosionRange + Vector3.up * 2.21f;
+                        GameObject explosionX = Instantiate(explosion, forward, Quaternion.identity);
+                        ExplosionDestroySelf explosionSelf = explosionX.GetComponent<ExplosionDestroySelf>();
+                        explosionSelf.SetParentBomb(this);
                         return;
                     }
+
+                    ExploadPerk(raycastHit, "BombRange", 3f, Direction.Forward);
+                    ExploadPerk(raycastHit, "ExtraBomb", 3f, Direction.Forward);
+                    ExploadPerk(raycastHit, "ExtraHealth", 3f, Direction.Forward);
+
                 }
                 else
                 {
@@ -107,8 +138,17 @@ public class Bomb : MonoBehaviour
                         //eðer kutuysa yok et.
                         InstantiatePerkAtRandom(raycastHit);
                         Destroy(raycastHit.collider.gameObject);
+
+                        Vector3 backward = transform.position - Vector3.forward * explosionRange + Vector3.up * 2.21f;
+                        GameObject explosionX = Instantiate(explosion, backward, Quaternion.identity);
+                        ExplosionDestroySelf explosionSelf = explosionX.GetComponent<ExplosionDestroySelf>();
+                        explosionSelf.SetParentBomb(this);
                         return;
                     }
+                    ExploadPerk(raycastHit, "BombRange", 3f, Direction.Backward);
+                    ExploadPerk(raycastHit, "ExtraBomb", 3f, Direction.Backward);
+                    ExploadPerk(raycastHit, "ExtraHealth", 3f, Direction.Backward);
+
                 }
                 else
                 {
@@ -117,8 +157,6 @@ public class Bomb : MonoBehaviour
                     GameObject explosionX = Instantiate(explosion, backward, Quaternion.identity);
                     ExplosionDestroySelf explosionSelf = explosionX.GetComponent<ExplosionDestroySelf>();
                     explosionSelf.SetParentBomb(this);
-
-
                 }
                 bombsRange += 3f;
                 explosionRange += 3f;
@@ -139,8 +177,18 @@ public class Bomb : MonoBehaviour
                         //eðer kutuysa yok et.
                         InstantiatePerkAtRandom(raycastHit);
                         Destroy(raycastHit.collider.gameObject);
+
+                        Vector3 right = transform.position + Vector3.right * explosionRange + Vector3.up * 2.21f;
+                        GameObject explosionX = Instantiate(explosion, right, Quaternion.identity);
+                        ExplosionDestroySelf explosionSelf = explosionX.GetComponent<ExplosionDestroySelf>();
+                        explosionSelf.SetParentBomb(this);
                         return;
                     }
+                    ExploadPerk(raycastHit, "BombRange", 3f, Direction.Right);
+                    ExploadPerk(raycastHit, "ExtraBomb", 3f, Direction.Right);
+                    ExploadPerk(raycastHit, "ExtraHealth", 3f, Direction.Right);
+
+
                 }
                 else
                 {
@@ -169,8 +217,17 @@ public class Bomb : MonoBehaviour
                         //eðer kutuysa yok et.
                         InstantiatePerkAtRandom(raycastHit);
                         Destroy(raycastHit.collider.gameObject);
+
+                        Vector3 left = transform.position - Vector3.right * explosionRange + Vector3.up * 2.21f;
+                        GameObject explosionX = Instantiate(explosion, left, Quaternion.identity);
+                        ExplosionDestroySelf explosionSelf = explosionX.GetComponent<ExplosionDestroySelf>();
+                        explosionSelf.SetParentBomb(this);
                         return;
                     }
+                    ExploadPerk(raycastHit, "BombRange", 3f, Direction.Left);
+                    ExploadPerk(raycastHit, "ExtraBomb", 3f, Direction.Left);
+                    ExploadPerk(raycastHit, "ExtraHealth", 3f, Direction.Left);
+
                 }
                 else
                 {
@@ -199,6 +256,82 @@ public class Bomb : MonoBehaviour
         }
     }
 
+
+    private void ExploadPerk(RaycastHit raycastHit, String str, float explosionRange, Direction direction)
+    {
+
+        if (raycastHit.collider.gameObject.tag.Equals(str) && direction == Direction.Forward)
+        {          
+            Destroy(raycastHit.collider.gameObject);
+            Vector3 forward = transform.position + Vector3.forward * explosionRange + Vector3.up * 2.21f;     
+            
+            GameObject explosionX = Instantiate(explosion, forward, Quaternion.identity);
+            ExplosionDestroySelf explosionSelf = explosionX.GetComponent<ExplosionDestroySelf>();
+            explosionSelf.SetParentBomb(this);
+        }
+
+        if (raycastHit.collider.gameObject.tag.Equals(str) && direction == Direction.Backward)
+        {        
+            Destroy(raycastHit.collider.gameObject);
+
+            Vector3 backward = transform.position - Vector3.forward * explosionRange + Vector3.up * 2.21f;
+            GameObject explosionX;
+            explosionX = Instantiate(explosion, backward, Quaternion.identity);
+
+            ExplosionDestroySelf explosionSelf = explosionX.GetComponent<ExplosionDestroySelf>();
+            explosionSelf.SetParentBomb(this);
+        }
+
+        if (raycastHit.collider.gameObject.tag.Equals(str) && direction == Direction.Right)
+        {
+            Destroy(raycastHit.collider.gameObject);
+            Vector3 right = transform.position + Vector3.right * explosionRange + Vector3.up * 2.21f;
+
+            GameObject explosionX;
+            explosionX = Instantiate(explosion, right, Quaternion.identity);
+
+            ExplosionDestroySelf explosionSelf = explosionX.GetComponent<ExplosionDestroySelf>();
+            explosionSelf.SetParentBomb(this);
+        }
+
+        if (raycastHit.collider.gameObject.tag.Equals(str) && direction == Direction.Left)
+        {
+            Destroy(raycastHit.collider.gameObject);
+            Vector3 left = transform.position - Vector3.right * explosionRange + Vector3.up * 2.21f;
+
+            GameObject explosionX;
+
+            explosionX = Instantiate(explosion, left, Quaternion.identity);
+
+            ExplosionDestroySelf explosionSelf = explosionX.GetComponent<ExplosionDestroySelf>();
+            explosionSelf.SetParentBomb(this);
+        }         
+    }
+
+
+    private float moveSpeed = 50f;
+    public void MoveBomb(bool move, Vector3 newPosition)
+    {
+        if (move)
+        {
+            float step = moveSpeed * Time.deltaTime;
+            transform.position = Vector3.MoveTowards(transform.position, newPosition, step);
+        }
+    }
+     
+ }
+
+
+
+
+
+
+
+  
+
+
+ 
+
    
 
-}
+

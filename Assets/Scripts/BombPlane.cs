@@ -24,4 +24,8 @@ public class BombPlane : MonoBehaviour
         return bombPresent;
     }
     
+    public Transform GetTransform()
+    {
+        return this.transform;
+    }
 }
