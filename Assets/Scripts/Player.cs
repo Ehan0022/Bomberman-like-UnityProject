@@ -11,6 +11,7 @@ public class Player : MonoBehaviour
     [SerializeField] private LayerMask perkLayerMask;
     [SerializeField] private LayerMask boxOrWallLayerMask;
     [SerializeField] private LayerMask bombsLayerMask;
+    [SerializeField] private LayerMask portalsLayerMask;
 
     [SerializeField] private int health = 3;
 
@@ -61,6 +62,7 @@ public class Player : MonoBehaviour
     {
         HandleMovement();        
         HandlePerkInteractions();
+        HandleTransports();
 
     }
 
@@ -233,10 +235,42 @@ public class Player : MonoBehaviour
     }
 
 
-    [SerializeField] GameObject debugBomb;
+    RaycastHit portalInFront;
+    Portal portalInFrontS;
+    private bool canTeleportAgain = true;
+    private float maxCooldown = 3f;
+    private float timer = 0f;
+    private void HandleTransports()
+    {
+        if(canTeleportAgain)
+        {
+            Vector3 start2 = transform.position;
+            Vector3 end2 = lastMoveDir.normalized;
+            Physics.Raycast(start2, end2, out portalInFront, 1f, portalsLayerMask);
+            portalInFrontS = portalInFront.collider.gameObject.GetComponent<Portal>();
+
+            if (portalInFrontS != null)
+            {
+                canTeleportAgain = false;
+                portalInFrontS.TeleportPlayer(this);
+            }
+        }
+        else
+        {
+            timer += Time.deltaTime;
+        }
+
+        if(timer > maxCooldown)
+        {
+            canTeleportAgain = true;
+            timer = 0;
+        }
+
+    }
+
+
     RaycastHit collidedObject;
     RaycastHit bombInFront;
-
     private void PushBomb()
     {
         Vector3 start = transform.position;
@@ -327,7 +361,10 @@ public class Player : MonoBehaviour
 
     private void ExtraRangePerkCollected(RaycastHit perk)
     {
-        Bomb.range++;
+        if(Bomb.maxRange >= Bomb.range)
+        {
+            Bomb.range++;
+        }      
         Destroy(perk.collider.gameObject);
     }
 

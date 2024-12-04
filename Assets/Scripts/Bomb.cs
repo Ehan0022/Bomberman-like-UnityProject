@@ -9,6 +9,7 @@ public class Bomb : MonoBehaviour
     private float maxTimer = 2f;
     private float timer = 0f;
     public static int range = 1;
+    public static int maxRange = 6;
     //bomba menzilinde 4.5f default, +3 bir sonraki bloðu kapsar.
 
     [SerializeField] private LayerMask boxLayerMask;
@@ -80,6 +81,12 @@ public class Bomb : MonoBehaviour
 
     private void HandleExplosionLogic(Direction direction)
     {
+     
+        GameObject explosionX_ = Instantiate(explosion, transform.position + Vector3.up * 2.21f, Quaternion.identity);
+        ExplosionDestroySelf explosionSelf_ = explosionX_.GetComponent<ExplosionDestroySelf>();
+        explosionSelf_.SetParentBomb(this);
+
+
         float bombsRange = 4.5f;
         RaycastHit raycastHit;
         float explosionRange = 3f;
@@ -248,7 +255,7 @@ public class Bomb : MonoBehaviour
 
     private void InstantiatePerkAtRandom(RaycastHit box)
     {
-        int chance1 = UnityEngine.Random.Range(0,3);
+        int chance1 = UnityEngine.Random.Range(0,4);
         int chance2 = UnityEngine.Random.Range(0, perks.Length);
         if (0 == chance1)
         {

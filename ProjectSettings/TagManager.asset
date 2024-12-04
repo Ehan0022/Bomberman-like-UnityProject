@@ -19,9 +19,9 @@ TagManager:
   - BombPlane
   - Boxes
   - Perks
-  - 
-  - 
-  - 
+  - BoxOrWall
+  - BombLayerMask
+  - PortalsLayerMask
   - 
   - 
   - 
